@@ -1,0 +1,552 @@
+openapi: 3.0.0
+info:
+  title: Todo List API
+  description: REST API для управления задачами с поддержкой PostgreSQL
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: support@example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:8080
+    description: Development server
+  - url: https://api.example.com
+    description: Production server
+
+paths:
+  /tasks:
+    get:
+      summary: Получить все задачи
+      description: Возвращает список всех задач
+      tags:
+        - Tasks
+      parameters:
+        - name: completed
+          in: query
+          description: Фильтр по статусу выполнения
+          required: false
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          description: Максимальное количество задач
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          description: Смещение для пагинации
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Список задач успешно получен
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  total:
+                    type: integer
+                    description: Общее количество задач
+                  limit:
+                    type: integer
+                    description: Лимит записей
+                  offset:
+                    type: integer
+                    description: Смещение
+              example:
+                tasks:
+                  - id: 1
+                    name: "Купить молоко"
+                    description: "В магазине на углу"
+                    completed: false
+                    created_at: "2025-01-03T10:00:00Z"
+                    updated_at: "2025-01-03T10:00:00Z"
+                  - id: 2
+                    name: "Выучить Go"
+                    description: "Изучить основы языка Go"
+                    completed: true
+                    created_at: "2025-01-02T09:00:00Z"
+                    updated_at: "2025-01-03T11:30:00Z"
+                total: 2
+                limit: 50
+                offset: 0
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      summary: Создать новую задачу
+      description: Создает новую задачу в системе
+      tags:
+        - Tasks
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaskRequest'
+            example:
+              name: "Купить хлеб"
+              description: "В ближайшем супермаркете"
+      responses:
+        '201':
+          description: Задача успешно создана
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+              example:
+                id: 3
+                name: "Купить хлеб"
+                description: "В ближайшем супермаркете"
+                completed: false
+                created_at: "2025-01-03T12:00:00Z"
+                updated_at: "2025-01-03T12:00:00Z"
+        '400':
+          description: Неверные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Validation failed"
+                message: "Name is required"
+                code: "VALIDATION_ERROR"
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/{id}:
+    get:
+      summary: Получить задачу по ID
+      description: Возвращает конкретную задачу по её идентификатору
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор задачи
+          schema:
+            type: integer
+            minimum: 1
+          example: 1
+      responses:
+        '200':
+          description: Задача найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: "Not Found"
+                message: "Task with ID 1 not found"
+                code: "TASK_NOT_FOUND"
+        '400':
+          description: Неверный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      summary: Обновить задачу
+      description: Полностью обновляет существующую задачу
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор задачи
+          schema:
+            type: integer
+            minimum: 1
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateTaskRequest'
+            example:
+              name: "Купить молоко и хлеб"
+              description: "В супермаркете на главной улице"
+              completed: false
+      responses:
+        '200':
+          description: Задача успешно обновлена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '400':
+          description: Неверные данные запроса
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      summary: Удалить задачу
+      description: Удаляет задачу из системы
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор задачи
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '204':
+          description: Задача успешно удалена
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Неверный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/{id}/complete:
+    patch:
+      summary: Отметить задачу выполненной
+      description: Помечает задачу как выполненную
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор задачи
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Задача помечена выполненной
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Неверный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/completed:
+    get:
+      summary: Получить выполненные задачи
+      description: Возвращает список всех выполненных задач
+      tags:
+        - Tasks
+      parameters:
+        - name: limit
+          in: query
+          description: Максимальное количество задач
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          description: Смещение для пагинации
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Список выполненных задач
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  total:
+                    type: integer
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /tasks/pending:
+    get:
+      summary: Получить невыполненные задачи
+      description: Возвращает список всех невыполненных задач
+      tags:
+        - Tasks
+      parameters:
+        - name: limit
+          in: query
+          description: Максимальное количество задач
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: offset
+          in: query
+          description: Смещение для пагинации
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+      responses:
+        '200':
+          description: Список невыполненных задач
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Task'
+                  total:
+                    type: integer
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /health:
+    get:
+      summary: Проверка здоровья сервиса
+      description: Возвращает статус работы API
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Сервис работает нормально
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok, error]
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                  database:
+                    type: string
+                    enum: [connected, disconnected]
+              example:
+                status: "ok"
+                timestamp: "2025-01-03T12:00:00Z"
+                version: "1.0.0"
+                database: "connected"
+
+components:
+  schemas:
+    Task:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+          description: Уникальный идентификатор задачи
+          minimum: 1
+        name:
+          type: string
+          example: "Купить молоко"
+          description: Название задачи
+          minLength: 1
+          maxLength: 255
+        description:
+          type: string
+          example: "В магазине на углу"
+          description: Описание задачи
+          maxLength: 1000
+        completed:
+          type: boolean
+          example: false
+          description: Статус выполнения задачи
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-01-03T10:00:00Z"
+          description: Дата и время создания
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-01-03T10:00:00Z"
+          description: Дата и время последнего обновления
+      required:
+        - id
+        - name
+        - description
+        - completed
+        - created_at
+        - updated_at
+
+    CreateTaskRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "Купить молоко"
+          description: Название задачи
+        description:
+          type: string
+          maxLength: 1000
+          example: "В магазине на углу"
+          description: Описание задачи
+      required:
+        - name
+        - description
+
+    UpdateTaskRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 255
+          example: "Купить молоко и хлеб"
+          description: Название задачи
+        description:
+          type: string
+          maxLength: 1000
+          example: "В супермаркете на главной улице"
+          description: Описание задачи
+        completed:
+          type: boolean
+          example: false
+          description: Статус выполнения задачи
+      required:
+        - name
+        - description
+        - completed
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "Validation Error"
+          description: Тип ошибки
+        message:
+          type: string
+          example: "Name is required"
+          description: Описание ошибки
+        code:
+          type: string
+          example: "VALIDATION_ERROR"
+          description: Код ошибки
+        details:
+          type: object
+          description: Дополнительные детали ошибки
+          additionalProperties: true
+      required:
+        - error
+        - message
+        - code
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT токен для аутентификации
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Tasks
+    description: Операции с задачами
+  - name: Health
+    description: Проверка состояния сервиса
