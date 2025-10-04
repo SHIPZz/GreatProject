@@ -22,7 +22,6 @@ import (
 )
 
 func main() {
-	// Подключение к PostgreSQL
 	conn, err := pgx.Connect(context.Background(), getDatabaseURL())
 
 	if err != nil {
