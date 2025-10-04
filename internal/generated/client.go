@@ -120,6 +120,9 @@ type ClientInterface interface {
 
 	// PatchTasksIdComplete request
 	PatchTasksIdComplete(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// PatchTasksIdUncomplete request
+	PatchTasksIdUncomplete(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 func (c *Client) GetHealth(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
@@ -244,6 +247,18 @@ func (c *Client) PutTasksId(ctx context.Context, id int, body PutTasksIdJSONRequ
 
 func (c *Client) PatchTasksIdComplete(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewPatchTasksIdCompleteRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+func (c *Client) PatchTasksIdUncomplete(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewPatchTasksIdUncompleteRequest(c.Server, id)
 	if err != nil {
 		return nil, err
 	}
@@ -681,6 +696,40 @@ func NewPatchTasksIdCompleteRequest(server string, id int) (*http.Request, error
 	return req, nil
 }
 
+// NewPatchTasksIdUncompleteRequest generates requests for PatchTasksIdUncomplete
+func NewPatchTasksIdUncompleteRequest(server string, id int) (*http.Request, error) {
+	var err error
+
+	var pathParam0 string
+
+	pathParam0, err = runtime.StyleParamWithLocation("simple", false, "id", runtime.ParamLocationPath, id)
+	if err != nil {
+		return nil, err
+	}
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/tasks/%s/uncomplete", pathParam0)
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("PATCH", queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -754,6 +803,9 @@ type ClientWithResponsesInterface interface {
 
 	// PatchTasksIdCompleteWithResponse request
 	PatchTasksIdCompleteWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*PatchTasksIdCompleteResponse, error)
+
+	// PatchTasksIdUncompleteWithResponse request
+	PatchTasksIdUncompleteWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*PatchTasksIdUncompleteResponse, error)
 }
 
 type GetHealthResponse struct {
@@ -993,6 +1045,31 @@ func (r PatchTasksIdCompleteResponse) StatusCode() int {
 	return 0
 }
 
+type PatchTasksIdUncompleteResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	JSON200      *Task
+	JSON400      *Error
+	JSON404      *Error
+	JSON500      *Error
+}
+
+// Status returns HTTPResponse.Status
+func (r PatchTasksIdUncompleteResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r PatchTasksIdUncompleteResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
 // GetHealthWithResponse request returning *GetHealthResponse
 func (c *ClientWithResponses) GetHealthWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetHealthResponse, error) {
 	rsp, err := c.GetHealth(ctx, reqEditors...)
@@ -1088,6 +1165,15 @@ func (c *ClientWithResponses) PatchTasksIdCompleteWithResponse(ctx context.Conte
 		return nil, err
 	}
 	return ParsePatchTasksIdCompleteResponse(rsp)
+}
+
+// PatchTasksIdUncompleteWithResponse request returning *PatchTasksIdUncompleteResponse
+func (c *ClientWithResponses) PatchTasksIdUncompleteWithResponse(ctx context.Context, id int, reqEditors ...RequestEditorFn) (*PatchTasksIdUncompleteResponse, error) {
+	rsp, err := c.PatchTasksIdUncomplete(ctx, id, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParsePatchTasksIdUncompleteResponse(rsp)
 }
 
 // ParseGetHealthResponse parses an HTTP response from a GetHealthWithResponse call
@@ -1419,6 +1505,53 @@ func ParsePatchTasksIdCompleteResponse(rsp *http.Response) (*PatchTasksIdComplet
 	}
 
 	response := &PatchTasksIdCompleteResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest Task
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON400 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON404 = &dest
+
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
+		var dest Error
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON500 = &dest
+
+	}
+
+	return response, nil
+}
+
+// ParsePatchTasksIdUncompleteResponse parses an HTTP response from a PatchTasksIdUncompleteWithResponse call
+func ParsePatchTasksIdUncompleteResponse(rsp *http.Response) (*PatchTasksIdUncompleteResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &PatchTasksIdUncompleteResponse{
 		Body:         bodyBytes,
 		HTTPResponse: rsp,
 	}

@@ -216,6 +216,19 @@ func (h *TaskHandler) PatchTasksIdComplete(ctx echo.Context, id int) error {
 	return ctx.JSON(http.StatusOK, h.convertToAPITask(*task))
 }
 
+// PatchTasksIdUncomplete снять отметку выполнения с задачи
+func (h *TaskHandler) PatchTasksIdUncomplete(ctx echo.Context, id int) error {
+	task, err := h.service.UncompleteTask(context.Background(), int32(id))
+	if err != nil {
+		return ctx.JSON(http.StatusNotFound, generated.Error{
+			Code:    "TASK_NOT_FOUND",
+			Message: "Task not found",
+		})
+	}
+
+	return ctx.JSON(http.StatusOK, h.convertToAPITask(*task))
+}
+
 // convertToAPITask конвертирует модель БД в API модель
 func (h *TaskHandler) convertToAPITask(task db.Task) generated.Task {
 	description := ""

@@ -40,6 +40,9 @@ type ServerInterface interface {
 	// Отметить задачу выполненной
 	// (PATCH /tasks/{id}/complete)
 	PatchTasksIdComplete(ctx echo.Context, id int) error
+	// Снять отметку выполнения с задачи
+	// (PATCH /tasks/{id}/uncomplete)
+	PatchTasksIdUncomplete(ctx echo.Context, id int) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -229,6 +232,24 @@ func (w *ServerInterfaceWrapper) PatchTasksIdComplete(ctx echo.Context) error {
 	return err
 }
 
+// PatchTasksIdUncomplete converts echo context to params.
+func (w *ServerInterfaceWrapper) PatchTasksIdUncomplete(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "id" -------------
+	var id int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "id", ctx.Param("id"), &id, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true})
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter id: %s", err))
+	}
+
+	ctx.Set(BearerAuthScopes, []string{})
+
+	// Invoke the callback with all the unmarshaled arguments
+	err = w.Handler.PatchTasksIdUncomplete(ctx, id)
+	return err
+}
+
 // This is a simple interface which specifies echo.Route addition functions which
 // are present on both echo.Echo and echo.Group, since we want to allow using
 // either of them for path registration
@@ -266,5 +287,6 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 	router.GET(baseURL+"/tasks/:id", wrapper.GetTasksId)
 	router.PUT(baseURL+"/tasks/:id", wrapper.PutTasksId)
 	router.PATCH(baseURL+"/tasks/:id/complete", wrapper.PatchTasksIdComplete)
+	router.PATCH(baseURL+"/tasks/:id/uncomplete", wrapper.PatchTasksIdUncomplete)
 
 }

@@ -15,6 +15,7 @@ type TaskRepository interface {
 	Update(ctx context.Context, id int32, name, description string, completed bool) (*db.Task, error)
 	Delete(ctx context.Context, id int32) error
 	Complete(ctx context.Context, id int32) (*db.Task, error)
+	Uncomplete(ctx context.Context, id int32) (*db.Task, error)
 	GetByStatus(ctx context.Context, completed bool, limit, offset int32) ([]*db.Task, error)
 }
 
@@ -64,6 +65,10 @@ func (r *taskRepository) Complete(ctx context.Context, id int32) (*db.Task, erro
 	return r.queries.CompleteTask(ctx, id)
 }
 
+func (r *taskRepository) Uncomplete(ctx context.Context, id int32) (*db.Task, error) {
+	return r.queries.UncompleteTask(ctx, id)
+}
+
 func (r *taskRepository) GetByStatus(ctx context.Context, completed bool, limit, offset int32) ([]*db.Task, error) {
 	return r.queries.ListTasksByStatus(ctx, db.ListTasksByStatusParams{
 		Completed: pgtype.Bool{Bool: completed, Valid: true},
@@ -71,4 +76,3 @@ func (r *taskRepository) GetByStatus(ctx context.Context, completed bool, limit,
 		Offset:    offset,
 	})
 }
-

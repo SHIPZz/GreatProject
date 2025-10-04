@@ -21,6 +21,7 @@ type TaskService interface {
 	UpdateTask(ctx context.Context, id int32, name, description string, completed bool) (*db.Task, error)
 	DeleteTask(ctx context.Context, id int32) error
 	CompleteTask(ctx context.Context, id int32) (*db.Task, error)
+	UncompleteTask(ctx context.Context, id int32) (*db.Task, error)
 	GetCompletedTasks(ctx context.Context, limit, offset int32) ([]*db.Task, error)
 	GetPendingTasks(ctx context.Context, limit, offset int32) ([]*db.Task, error)
 }
@@ -91,6 +92,14 @@ func (s *taskService) CompleteTask(ctx context.Context, id int32) (*db.Task, err
 	return task, nil
 }
 
+func (s *taskService) UncompleteTask(ctx context.Context, id int32) (*db.Task, error) {
+	task, err := s.repo.Uncomplete(ctx, id)
+	if err != nil {
+		return nil, ErrTaskNotFound
+	}
+	return task, nil
+}
+
 func (s *taskService) GetCompletedTasks(ctx context.Context, limit, offset int32) ([]*db.Task, error) {
 	return s.repo.GetByStatus(ctx, true, limit, offset)
 }
@@ -98,4 +107,3 @@ func (s *taskService) GetCompletedTasks(ctx context.Context, limit, offset int32
 func (s *taskService) GetPendingTasks(ctx context.Context, limit, offset int32) ([]*db.Task, error) {
 	return s.repo.GetByStatus(ctx, false, limit, offset)
 }
-

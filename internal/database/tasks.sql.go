@@ -190,6 +190,27 @@ func (q *Queries) ListTasksByStatus(ctx context.Context, arg ListTasksByStatusPa
 	return items, nil
 }
 
+const UncompleteTask = `-- name: UncompleteTask :one
+UPDATE tasks
+SET completed = false
+WHERE id = $1
+RETURNING id, name, description, completed, created_at, updated_at
+`
+
+func (q *Queries) UncompleteTask(ctx context.Context, id int32) (*Task, error) {
+	row := q.db.QueryRow(ctx, UncompleteTask, id)
+	var i Task
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.Description,
+		&i.Completed,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+	)
+	return &i, err
+}
+
 const UpdateTask = `-- name: UpdateTask :one
 UPDATE tasks 
 SET name = $2, description = $3, completed = $4

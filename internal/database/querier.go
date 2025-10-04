@@ -19,6 +19,7 @@ type Querier interface {
 	GetTask(ctx context.Context, id int32) (*Task, error)
 	ListTasks(ctx context.Context, arg ListTasksParams) ([]*Task, error)
 	ListTasksByStatus(ctx context.Context, arg ListTasksByStatusParams) ([]*Task, error)
+	UncompleteTask(ctx context.Context, id int32) (*Task, error)
 	UpdateTask(ctx context.Context, arg UpdateTaskParams) (*Task, error)
 }
 

@@ -42,3 +42,9 @@ SELECT COUNT(*) FROM tasks;
 
 -- name: CountTasksByStatus :one
 SELECT COUNT(*) FROM tasks WHERE completed = $1;
+
+-- name: UncompleteTask :one
+UPDATE tasks
+SET completed = false
+WHERE id = $1
+RETURNING id, name, description, completed, created_at, updated_at;

@@ -306,6 +306,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /tasks/{id}/uncomplete:
+    patch:
+      summary: Снять отметку выполнения с задачи
+      description: Помечает задачу как невыполненную
+      tags:
+        - Tasks
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Уникальный идентификатор задачи
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: Задача помечена невыполненной
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '404':
+          description: Задача не найдена
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '400':
+          description: Неверный ID
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Внутренняя ошибка сервера
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /tasks/completed:
     get:
       summary: Получить выполненные задачи
